@@ -94,7 +94,8 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
         return CHIP8_NULL_PTR;
     }
 
-    #define INC_PC (chip8->pc += (2))
+    #define INC_PC (chip8->pc = ((chip8->pc + 2) & 0xFFF))
+    #define DEC_PC (chip8->pc = ((chip8->pc - 2) & 0xFFF))
 
     uint8_t const first = chip8_read(chip8, chip8->pc);
     uint8_t const second = chip8_read(chip8, chip8->pc + 1);
@@ -251,7 +252,7 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
             break;
         }
         case 0xB: { // BNNN: jump0 NNN
-            chip8->pc = GET_NNN + chip8->V[0];
+            chip8->pc = (GET_NNN + chip8->V[0]) & 0xFFF;
             break;
         }
         case 0xC: { // CXNN: vX := random NN
@@ -319,13 +320,13 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
                             chip8->V[GET_X] = chip8->waiting_key & 0xF;
                             chip8->waiting_key = -1;
                         } else {
-                            chip8->pc -= 2;
+                            DEC_PC;
                         }
                     } else {
                         if (first_pressed_key >= 0) {
                             chip8->waiting_key = first_pressed_key;
                         }
-                        chip8->pc -= 2;
+                        DEC_PC;
                     }
                     break;
                 }
@@ -338,7 +339,7 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
                     break;
                 }
                 case 0x1E: { // FX1E: i += vX
-                    chip8->I += GET_VX;
+                    chip8->I = (chip8->I + GET_VX) & 0xFFF;
                     break;
                 }
                 case 0x29: { // FX29: i := hex vX
@@ -363,7 +364,7 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
                     for (int i = 0; i <= X; i++) {
                         chip8_write(chip8, I + i, chip8->V[i]);
                     }
-                    chip8->I += X + 1;
+                    chip8->I = (chip8->I + X + 1) & 0xFFF;
                     break;
                 }
                 case 0x65: { // FX65: load vX
@@ -372,7 +373,7 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
                     for (int i = 0; i <= X; i++) {
                         chip8->V[i] = chip8_read(chip8, I + i);
                     }
-                    chip8->I += X + 1;
+                    chip8->I = (chip8->I + X + 1) & 0xFFF;
                     break;
                 }
                 default: {
@@ -393,6 +394,7 @@ static uint32_t chip8_cycle(chip8_t * const chip8) {
     #undef GET_N
     #undef GET_NN
     #undef GET_NNN
+    #undef DEC_PC
     #undef INC_PC
 
     return dxyn_executed ? CHIP8_DXYN : 0;
