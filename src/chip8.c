@@ -70,11 +70,11 @@ chip8_t *chip8_create(uint8_t const *rom, uint16_t const rom_size) {
 }
 
 static uint8_t chip8_read(chip8_t const *chip8, uint32_t const address) {
-    return chip8->ram[address & 0xFFFF];
+    return chip8->ram[address & 0xFFF];
 }
 
 static void chip8_write(chip8_t * const chip8, uint32_t const address, uint8_t const value) {
-    chip8->ram[address & 0xFFFF] = value;
+    chip8->ram[address & 0xFFF] = value;
 }
 
 static int8_t chip8_get_first_pressed_key(chip8_t const *chip8) {
