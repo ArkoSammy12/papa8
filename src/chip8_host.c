@@ -17,6 +17,7 @@ static void poll_chip8_keypad(chip8_t *chip8, const SDL_Keycode key, const bool 
         }
         case SDLK_3: {
             chip8_set_key(chip8, 0x3, value);
+            break;
         }
         case SDLK_4: {
             chip8_set_key(chip8, 0xC, value);
