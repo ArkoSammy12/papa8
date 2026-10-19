@@ -2,6 +2,10 @@
 
 #include "chip8_host.h"
 
+#define SDL_MAIN_USE_CALLBACKS 1
+
+static SDL_AtomicInt chip8_play_audio = {0};
+
 static void poll_chip8_keypad(chip8_t *chip8, const SDL_Keycode key, const bool value) {
     if (chip8 == NULL) {
         return;
@@ -75,6 +79,29 @@ static void poll_chip8_keypad(chip8_t *chip8, const SDL_Keycode key, const bool 
     }
 }
 
+static void SDLCALL chip8_audio_callback(void *userdata, SDL_AudioStream *stream, int const additional_amount, int total_amount) {
+    bool const play_buzzer = SDL_GetAtomicInt(&chip8_play_audio) != 0;
+    static uint8_t phase = 0;
+    uint8_t *out = calloc(additional_amount, sizeof(uint8_t));
+    if (out == NULL) {
+        return;
+    }
+    if (play_buzzer) {
+        int const additional_amount_samples = additional_amount / sizeof(uint16_t);
+        for (int i = 0; i < additional_amount_samples; i++) {
+            uint8_t constexpr PATTERN[] = {0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0};
+            int16_t const sample = (((PATTERN[phase >> 3]) & (1 << (7 ^ (phase & 7)))) != 0 ? 4 : -4) * 256;
+            out[i * 2] = sample & 0xFF;
+            out[i * 2 + 1] = (sample >> 8) & 0xFF;
+            phase = (phase + 1) % 128;
+        }
+    } else {
+        phase = 0;
+    }
+    SDL_PutAudioStreamData(stream, out, additional_amount);
+    free(out);
+}
+
 run_result_t chip8_host_run_chip8(chip8_t *chip8) {
     if (chip8 == NULL) {
         return (run_result_t) {
@@ -88,6 +115,7 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
     SDL_Window *window = nullptr;
     SDL_Renderer *renderer = nullptr;
     SDL_Texture *texture = nullptr;
+    SDL_AudioStream *stream = nullptr;
 
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO)) {
         run_result.error_num = -1;
@@ -117,6 +145,18 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
         goto exit;
     }
 
+    SDL_AudioSpec const audio_spec = {
+        .channels = 1,
+        .format = SDL_AUDIO_S16,
+        .freq = (int) 4000.0 * pow(2.0, (175 - 64) / 48.0)
+    };
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audio_spec, chip8_audio_callback, nullptr);
+    if (stream == NULL) {
+        run_result.error_num = -1;
+        run_result.msg = "Failed to create SDL audio device stream!";
+        goto exit;
+    }
+
     if (!SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST)) {
         run_result.error_num = -1;
         run_result.msg = "Failed to set SDL texture to nearest neighbor interpolation scale mode!";
@@ -126,6 +166,12 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
     if (!SDL_SetRenderLogicalPresentation(renderer, CHIP8_GFX_WIDTH, CHIP8_GFX_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX)) {
         run_result.error_num = -1;
         run_result.msg = "Failed to set SDL render logic presentation mode to letterboxed!";
+        goto exit;
+    }
+
+    if (!SDL_ResumeAudioStreamDevice(stream)) {
+        run_result.error_num = -1;
+        run_result.msg = "Failed to resume SDL audio device stream!";
         goto exit;
     }
 
@@ -160,8 +206,8 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
 
         uint32_t frame_buffer[CHIP8_GFX_LENGTH] = {0};
         chip8_dump_argb8(chip8, frame_buffer, CHIP8_GFX_LENGTH);
-        constexpr int pitch = CHIP8_GFX_WIDTH * sizeof(uint32_t);
 
+        constexpr int pitch = CHIP8_GFX_WIDTH * sizeof(uint32_t);
         if (!SDL_UpdateTexture(texture, nullptr, frame_buffer, pitch)) {
             running = false;
             run_result.error_num = -1;
@@ -197,6 +243,9 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
             break;
         }
 
+        bool const play_buzzer = chip8_play_buzzer(chip8);
+        SDL_SetAtomicInt(&chip8_play_audio, play_buzzer ? 1 : 0);
+
         SDL_Delay(16);
     }
 
@@ -209,6 +258,9 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
     }
     if (window) {
         SDL_DestroyWindow(window);
+    }
+    if (stream) {
+        SDL_DestroyAudioStream(stream);
     }
     SDL_Quit();
     return run_result;
