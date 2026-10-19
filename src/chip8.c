@@ -1,12 +1,13 @@
-#include "chip8.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "chip8.h"
+
 #define FONT_SIZE 5
 #define FONT_DIGITS 16
-#define FONT_BYTES FONT_SIZE * FONT_DIGITS
+#define FONT_BYTES (FONT_SIZE * FONT_DIGITS)
 
 #define PROGRAM_BEGIN 0x200
 
@@ -447,5 +448,3 @@ bool chip8_play_buzzer(chip8_t const *chip8) {
     }
     return chip8->st > 0;
 }
-
-
