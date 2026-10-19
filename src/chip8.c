@@ -409,15 +409,17 @@ uint32_t chip8_execute_frame(chip8_t *chip8) {
         chip8->st--;
     }
 
-    uint32_t flags = 0;
     for (size_t i = 0; i < CHIP8_IPF; i++) {
-        flags |= chip8_cycle(chip8);
-        if (flags & CHIP8_DXYN || flags & CHIP8_NULL_PTR || flags & CHIP8_UNKNOWN_OPCODE) {
+        uint32_t const flags = chip8_cycle(chip8);
+        if (flags & CHIP8_DXYN) {
             break;
+        }
+        if (flags & CHIP8_NULL_PTR || flags & CHIP8_UNKNOWN_OPCODE) {
+            return flags;
         }
     }
 
-    return flags;
+    return 0;
 }
 
 uint32_t chip8_set_key(chip8_t * const chip8, const uint8_t index, const bool value) {
