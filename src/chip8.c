@@ -48,7 +48,7 @@ struct chip8 {
 };
 
 chip8_t *chip8_create(uint8_t const *rom, uint16_t const rom_size) {
-    if (rom_size >= CHIP8_RAM_SIZE - PROGRAM_BEGIN) {
+    if (rom_size > CHIP8_RAM_SIZE - PROGRAM_BEGIN) {
         return nullptr;
     }
 
