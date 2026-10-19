@@ -47,7 +47,7 @@ struct chip8 {
     int8_t waiting_key;
 };
 
-chip8_t *chip8_create(uint8_t const *rom, uint16_t const rom_size) {
+chip8_t *chip8_create(uint8_t const *rom, size_t const rom_size) {
     if (rom_size > CHIP8_RAM_SIZE - PROGRAM_BEGIN) {
         return nullptr;
     }

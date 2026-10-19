@@ -18,7 +18,7 @@ typedef struct chip8 chip8_t;
 
 uint8_t constexpr CHIP8_FPS = 60;
 
-chip8_t *chip8_create(const uint8_t *rom, uint16_t rom_size);
+chip8_t *chip8_create(const uint8_t *rom, size_t rom_size);
 
 uint32_t chip8_execute_frame(chip8_t *chip8);
 
