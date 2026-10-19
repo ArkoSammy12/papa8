@@ -2,6 +2,7 @@
 #define PAPA8_CHIP8_HOST_H
 
 #include <stdint.h>
+
 #include "chip8.h"
 
 typedef struct {

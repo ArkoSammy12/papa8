@@ -1,7 +1,6 @@
 #include <SDL3/SDL.h>
-#include "chip8_host.h"
 
-#include <stdio.h>
+#include "chip8_host.h"
 
 static void poll_chip8_keypad(chip8_t *chip8, const SDL_Keycode key, const bool value) {
     if (chip8 == NULL) {
