@@ -31,4 +31,4 @@ A binary should have then been generated in `/papa8/build/`.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE);
+This project is licensed under the [MIT License](LICENSE).
