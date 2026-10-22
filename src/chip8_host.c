@@ -89,10 +89,10 @@ static void SDLCALL chip8_audio_callback(void *userdata, SDL_AudioStream *stream
         return;
     }
     if (play_buzzer) {
-        int const additional_amount_samples = additional_amount / sizeof(uint16_t);
+        int const additional_amount_samples = (int)(additional_amount / sizeof(uint16_t));
         for (int i = 0; i < additional_amount_samples; i++) {
             uint8_t constexpr PATTERN[] = {0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0};
-            int16_t const sample = (((PATTERN[phase >> 3]) & (1 << (7 ^ (phase & 7)))) != 0 ? 4 : -4) * 256;
+            int16_t const sample = (int16_t)((((PATTERN[phase >> 3]) & (1 << (7 ^ (phase & 7)))) != 0 ? 4 : -4) * 256);
             out[i * 2] = sample & 0xFF;
             out[i * 2 + 1] = (sample >> 8) & 0xFF;
             phase = (phase + 1) % 128;
@@ -150,7 +150,7 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
     SDL_AudioSpec const audio_spec = {
         .channels = 1,
         .format = SDL_AUDIO_S16,
-        .freq = (int) 4000.0 * pow(2.0, (175 - 64) / 48.0)
+        .freq = (int) (4000.0 * pow(2.0, (175 - 64) / 48.0))
     };
     stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &audio_spec, chip8_audio_callback, nullptr);
     if (stream == NULL) {
