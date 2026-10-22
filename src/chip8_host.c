@@ -4,6 +4,8 @@
 
 #define SDL_MAIN_USE_CALLBACKS 1
 
+static constexpr uint64_t FRAME_DURATION_NS = (uint64_t)((1.0 / 60.0) * 1E9);
+
 static SDL_AtomicInt chip8_play_audio = {0};
 
 static void poll_chip8_keypad(chip8_t *chip8, const SDL_Keycode key, const bool value) {
@@ -178,6 +180,9 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
     bool running = true;
     SDL_Event event;
     while (running) {
+
+        uint64_t const frame_start = SDL_GetTicksNS();
+
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_EVENT_QUIT: {
@@ -246,7 +251,14 @@ run_result_t chip8_host_run_chip8(chip8_t *chip8) {
         bool const play_buzzer = chip8_play_buzzer(chip8);
         SDL_SetAtomicInt(&chip8_play_audio, play_buzzer ? 1 : 0);
 
-        SDL_Delay(16);
+        uint64_t const frame_end = SDL_GetTicksNS();
+
+        uint64_t const frame_duration = frame_end - frame_start;
+        if (frame_duration < FRAME_DURATION_NS) {
+            uint64_t const sleep_duration = FRAME_DURATION_NS - frame_duration;
+            SDL_DelayNS(sleep_duration);
+        }
+
     }
 
     exit:
